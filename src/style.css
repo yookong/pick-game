@@ -60,10 +60,11 @@ p{line-height:1.55}
 .showcase svg:first-child{transform:rotate(-12deg)}
 .showcase svg:last-child{transform:rotate(12deg)}
 .cabinet{border:3px solid #754c51;background:#f4c8ad;border-radius:16px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
-.chamber{display:block;width:100%;height:auto;max-height:calc(100dvh - 185px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:170px;background:#fae4ca}
+.chamber{display:block;width:100%;height:auto;max-height:calc(100dvh - 207px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:170px;background:#fae4ca}
 .playing main{padding-bottom:10px}
 .playing .masthead{min-height:62px}
 .machine-status{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;font-size:13px;font-weight:700;background:#754c51;color:#fff4df}
+.grip-status{background:#fff3dd;color:#593b37;padding:4px 10px;font-size:12px}
 .controls{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;gap:12px}
 .joystick{display:flex;align-items:center;justify-content:space-evenly;width:150px;min-height:53px;position:relative;background:#663f46;color:#ffe5cb;border-radius:32px;touch-action:none}
 .joystick i{display:block;width:34px;height:34px;border-radius:50%;background:#f6cf84;border:2px solid #33222e;box-shadow:0 3px 0 #33222e}

@@ -78,6 +78,7 @@ export function MachineView({ machine, debug, onDone }: {
   }
   return <>
     <div className="machine-status"><span>{machine.strong ? '강한 집게' : '일반 집게'} · {labels[machine.phase]}</span><strong data-testid="timer">{Math.ceil(machine.remaining)}초</strong></div>
+    <div className="grip-status">잡는 시간 최대 <strong data-testid="grip-duration">{machine.gripSeconds}초</strong></div>
     <svg className="chamber" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} aria-label="집게 기계">
       <defs>
         <linearGradient id="glass" x2="0" y2="1"><stop stopColor="#f7dbbb"/><stop offset="1" stopColor="#fff4df"/></linearGradient>

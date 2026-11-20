@@ -36,7 +36,7 @@ function App() {
   const [store, setStore] = useState<SaveStore>()
   const [state, setState] = useState<State>()
   const [error, setError] = useState('')
-  const [page, setPage] = useState<Page>('home')
+  const [page, setPage] = useState<Page>(__LAB__ ? 'lab' : 'home')
   const [today, setToday] = useState(localDay)
   const [busy, setBusy] = useState(false)
   const running = useRef(false)
@@ -51,7 +51,7 @@ function App() {
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    void openSession().then(async db => {
+    void openSession(__LAB__).then(async db => {
       setStore(db)
       setState((await db.update(recover)).state)
     }).catch(cause => setError(describe(cause)))
@@ -279,12 +279,13 @@ function App() {
               void commit(draft => { draft.preferences[key] = enabled })
             }}/></label>)}
           <p>강한 집게가 나올 때마다 다음 간격을 1~15회에서 균등하게 정해요. 그 간격의 마지막 시도에 강한 집게가 작동해요.</p>
-          <p>일반 집게는 기본 0.2초 동안 잡아요. ←/→ 또는 A/D로 움직이고 Space로 내려요.</p>
+          <p>일반 집게는 출구 가까이에서 최대 0.2초 동안 잡아요. 인형 한 칸만큼 멀어질 때마다 최대 유지 시간이 0.1초씩 늘어나요.</p>
+          <p>←/→ 또는 A/D로 움직이고 Space로 내려요.</p>
         </section>
         <section className="panel"><h2>저장 데이터</h2><p>게임 진행은 이 브라우저에 저장돼요.</p>
           <button disabled={busy} onClick={exportData}>내보내기</button>
           <button disabled={busy} onClick={() => fileInput.current?.click()}>가져오기</button>
-          {Lab && <button disabled={busy} onClick={() => navigate('lab')}>물리 테스트 도구</button>}
+          {Lab && <button disabled={busy} onClick={() => navigate('lab')}>관리자 테스트 모드</button>}
         </section>
       </>}
       {Lab && page === 'lab' && <Suspense fallback={<p>테스트 도구를 여는 중…</p>}><Lab state={state} busy={busy} commit={commit}

@@ -56,7 +56,7 @@ test('production loads offline, settles a touch-driven catch and saves the colle
   await page.getByRole('button', { name: /모찌 토끼/ }).tap()
   await expect(page.getByLabel('아이템 상세')).toContainText('최초 획득일')
   await page.getByRole('button', { name: '설정' }).tap()
-  await expect(page.getByRole('button', { name: '물리 테스트 도구' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '관리자 테스트 모드' })).toHaveCount(0)
 })
 
 test('reload refunds just once, attendance and three mini games pay exactly once', async ({ page }) => {
@@ -80,24 +80,38 @@ test('reload refunds just once, attendance and three mini games pay exactly once
   await expect(page.getByText('오늘 0회 남음')).toBeVisible()
 })
 
-test('development lab grants duplicates and selected duplicates can be exchanged', async ({ page }) => {
-  await page.goto('http://127.0.0.1:4174')
-  await page.getByRole('button', { name: '설정' }).tap()
-  await page.getByRole('button', { name: '물리 테스트 도구' }).tap()
+test('the deployed lab can reset the machine and grant currency without changing the game save', async ({ page, context }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '출석하고 코인 받기' }).tap()
+  await expect(page.getByLabel('코인 135', { exact: true })).toBeVisible()
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
+  await page.reload()
+  await expect(page.getByLabel('코인 135', { exact: true })).toBeVisible()
+
+  const lab = await context.newPage()
+  await lab.goto('/lab/')
+  await expect(lab.getByRole('heading', { name: '관리자 테스트 모드' })).toBeVisible()
+  await expect(lab.getByLabel('코인 120', { exact: true })).toBeVisible()
+  await lab.getByRole('button', { name: '코인에 적용' }).tap()
+  await expect(lab.getByLabel('코인 220', { exact: true })).toBeVisible()
+  await lab.getByRole('button', { name: '조각에 적용' }).tap()
+  await expect(lab.getByLabel('조각 100', { exact: true })).toBeVisible()
+  await lab.getByRole('button', { name: '기계 초기화 · 인형 다시 채우기' }).tap()
+  await expect(lab.getByRole('status')).toHaveText('기계에 인형을 다시 채웠어요.')
   for (let i = 0; i < 5; i++) {
-    await page.getByRole('button', { name: '인형 1개 지급' }).tap()
+    await lab.getByRole('button', { name: '인형 1개 지급' }).tap()
   }
-  await page.getByRole('button', { name: '교환소', exact: true }).tap()
-  await page.getByLabel('모찌 토끼 교환 수량').selectOption('4')
-  await page.getByRole('button', { name: '교환 확인 · 8 조각' }).tap()
-  await expect(page.getByText('인형 4개 → 8 조각')).toBeVisible()
-  await page.getByRole('button', { name: '교환하기' }).tap()
-  await expect(page.getByLabel('조각 8', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: '코인 교환 확인' }).tap()
-  await page.getByRole('button', { name: '교환하기' }).tap()
-  await expect(page.getByLabel('코인 130', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: '도감' }).tap()
-  await expect(page.getByRole('button', { name: /모찌 토끼.*1개/ })).toBeVisible()
+  await lab.getByRole('button', { name: '교환소', exact: true }).tap()
+  await lab.getByLabel('모찌 토끼 교환 수량').selectOption('4')
+  await lab.getByRole('button', { name: '교환 확인 · 8 조각' }).tap()
+  await expect(lab.getByText('인형 4개 → 8 조각')).toBeVisible()
+  await lab.getByRole('button', { name: '교환하기' }).tap()
+  await expect(lab.getByLabel('조각 108', { exact: true })).toBeVisible()
+  await lab.getByRole('button', { name: '도감' }).tap()
+  await expect(lab.getByRole('button', { name: /모찌 토끼.*1개/ })).toBeVisible()
+  await page.reload()
+  await expect(page.getByLabel('코인 135', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('조각 0', { exact: true })).toBeVisible()
 })
 
 test('offline shell uses its own build even if the host serves stale index.html', async ({ page, context }) => {

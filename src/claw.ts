@@ -11,6 +11,9 @@ export const CHUTE = 72
 export const FLOOR = 338
 export const CHUTE_LIP = { width: 12, height: 20 }
 export const CHUTE_GUARD = { top: 0, height: FLOOR - CHUTE_LIP.height }
+const NEAR_CHUTE = CHUTE + CHUTE_LIP.width + 21
+const GRIP_BAND_WIDTH = 42
+const GRIP_BONUS = .1
 const HOME = 38
 const RAIL = 51
 const STEP = 1 / 60
@@ -62,6 +65,13 @@ export class ClawMachine {
   private playerActed = false
   private chuteGuardOpen = false
   get chuteOpen() { return this.chuteGuardOpen }
+  get gripSeconds() {
+    const base = this.strong ? this.tuning.strongHold : this.tuning.weakHold
+    if (!base) return 0
+    const x = this.phase === 'aim' ? this.x : this.fromX
+    const band = Math.floor(Math.max(0, x - NEAR_CHUTE) / GRIP_BAND_WIDTH)
+    return Math.round((base + band * GRIP_BONUS) * 100) / 100
+  }
   readonly strong: boolean
   readonly tuning: Tuning
   constructor(pile: Piece[], strong: boolean, tuning: Tuning) {
@@ -132,8 +142,7 @@ export class ClawMachine {
   }
   private closeGrip() {
     const force = this.strong ? this.tuning.strongForce : this.tuning.weakForce
-    const hold = this.strong ? this.tuning.strongHold : this.tuning.weakHold
-    if (!force || !hold) return
+    if (!force || !this.gripSeconds) return
     const candidates = this.toys.filter(({ body }) =>
       Math.abs(body.position.x - this.x) < 21 && body.position.y >= this.y - 4 && body.position.y < this.y + 34 &&
       this.fingers.every(finger => Query.collides(body, finger.slice(3)).length > 0))
@@ -150,8 +159,7 @@ export class ClawMachine {
     this.holdTime = 0
   }
   private relax(seconds: number) {
-    const hold = this.strong ? this.tuning.strongHold : this.tuning.weakHold
-    this.openness = ease(clamp((seconds - hold) / .22, 0, 1))
+    this.openness = ease(clamp((seconds - this.gripSeconds) / .22, 0, 1))
   }
   private step() {
     this.elapsed += STEP
@@ -188,10 +196,9 @@ export class ClawMachine {
     if (this.grip) {
       this.holdTime += STEP
       const { toy, joint } = this.grip
-      const maxTime = this.strong ? this.tuning.strongHold : this.tuning.weakHold
       joint.pointA.x = this.x
       joint.pointA.y = this.y + 14
-      if (phase === 'open' || this.holdTime >= maxTime ||
+      if (phase === 'open' || this.holdTime >= this.gripSeconds ||
           Math.hypot(toy.body.position.x - joint.pointA.x, toy.body.position.y - joint.pointA.y) > 46) this.release()
     }
     if (phase === 'close' && p === 1) this.closeGrip()

@@ -7,6 +7,5 @@ export default defineConfig({
     launchOptions: process.env.PICK_CHROME ? { executablePath: process.env.PICK_CHROME } : undefined },
   webServer: [
     { command: 'pnpm preview --host 127.0.0.1 --port 4173 --strictPort', url: 'http://127.0.0.1:4173' },
-    { command: 'pnpm dev --host 127.0.0.1 --port 4174 --strictPort', url: 'http://127.0.0.1:4174' },
   ],
 })

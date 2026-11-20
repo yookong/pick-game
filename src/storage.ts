@@ -5,9 +5,9 @@ export interface SaveStore {
   raw(): Promise<unknown>
   replace(state: State): Promise<void>
 }
-export function openStore(): Promise<SaveStore> {
+export function openStore(name: string): Promise<SaveStore> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('little-room-treasures', 1)
+    const request = indexedDB.open(name, 1)
     request.onupgradeneeded = () => request.result.createObjectStore('progress')
     request.onerror = () => reject(request.error)
     request.onblocked = () => reject(new Error('다른 창에서 데이터베이스를 사용 중입니다.'))
@@ -43,18 +43,20 @@ export function openStore(): Promise<SaveStore> {
   })
 }
 
-export async function openSession() {
+export async function openSession(lab: boolean) {
+  const name = lab ? 'little-room-treasures-lab' : 'little-room-treasures'
+  const lockName = lab ? 'little-room-lab-save-session' : 'little-room-save-session'
   // Hold a per-origin exclusive lease for the lifetime of this page.
   if (navigator.locks) {
     await new Promise<void>((resolve, reject) => {
-      void navigator.locks.request('little-room-save-session', { ifAvailable: true }, lock => {
+      void navigator.locks.request(lockName, { ifAvailable: true }, lock => {
         if (!lock) throw new Error('다른 탭에서 게임이 열려 있습니다. 해당 탭을 닫고 다시 시도해 주세요.')
         resolve()
         return new Promise<void>(() => {})
       }).catch(reject)
     })
   }
-  return openStore()
+  return openStore(name)
 }
 
 export function decodeSave(text: string) {

@@ -6,6 +6,7 @@ import { grant, localDay, refill, type State, type Tuning } from './state.ts'
 export default function Lab({ state, busy, commit, onExport, onImport, onReset }: {
   state: State; busy: boolean; commit: Commit; onExport: () => void; onImport: () => void; onReset: () => void
 }) {
+  const [machineNotice, setMachineNotice] = useState('')
   const [selected, setSelected] = useState<string>(items[0].id)
   const [seed, setSeed] = useState('1')
   const validSeed = /^\d+$/.test(seed) && Number(seed) >= 1 && Number(seed) <= 0xffffffff
@@ -17,7 +18,8 @@ export default function Lab({ state, busy, commit, onExport, onImport, onReset }
     friction: '마찰', miniLimit: '하루 미니게임 한도',
   }
   return <>
-    <h1>물리 테스트 도구</h1>
+    <h1>관리자 테스트 모드</h1>
+    <p className="notice">여기서 지급한 재화와 변경한 기계 배치는 이 브라우저의 테스트 게임에만 저장돼요.</p>
     <fieldset className="panel" disabled={busy}>
       <legend>보상과 진행</legend>
       <label>증감량 <input type="number" value={amount} onChange={event => setAmount(event.currentTarget.value)}/></label>
@@ -55,7 +57,11 @@ export default function Lab({ state, busy, commit, onExport, onImport, onReset }
       }}/></label>
       <label>난수 시드 <input type="number" min="1" max="4294967295" value={seed} onChange={event => setSeed(event.currentTarget.value)}/></label>
       <button disabled={!validSeed} onClick={() => void commit(draft => { draft.rng = Number(seed); refill(draft) })}>시드 적용 및 재배치</button>
-      <button onClick={() => void commit(refill)}>기계 리필 및 재배치</button>
+      <button onClick={async () => {
+        const done = await commit(draft => { refill(draft); return true })
+        if (done) setMachineNotice('기계에 인형을 다시 채웠어요.')
+      }}>기계 초기화 · 인형 다시 채우기</button>
+      {machineNotice && <p role="status">{machineNotice}</p>}
     </fieldset>
     <fieldset className="panel" disabled={busy}>
       <legend>저장</legend>
