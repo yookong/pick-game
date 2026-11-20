@@ -9,6 +9,7 @@ export const WIDTH = 360
 export const HEIGHT = 410
 export const CHUTE = 72
 export const FLOOR = 338
+export const CHUTE_LIP = { width: 12, height: 20 }
 const HOME = 38
 const RAIL = 51
 const STEP = 1 / 60
@@ -55,6 +56,7 @@ export class ClawMachine {
   private openFrom = 0
   private grip: { toy: Toy; joint: Matter.Constraint } | null = null
   private fingers: Matter.Body[][]
+  private chuteLip: Matter.Body
   readonly strong: boolean
   readonly tuning: Tuning
   constructor(pile: Piece[], strong: boolean, tuning: Tuning) {
@@ -75,7 +77,10 @@ export class ClawMachine {
     }))
     const wall = (x: number, y: number, width: number, height: number) =>
       Bodies.rectangle(x, y, width, height, { isStatic: true, friction: .7 })
+    this.chuteLip = wall(CHUTE + CHUTE_LIP.width / 2, FLOOR - CHUTE_LIP.height / 2,
+      CHUTE_LIP.width, CHUTE_LIP.height)
     Composite.add(this.engine.world, [
+      this.chuteLip,
       wall(-12, HEIGHT / 2, 24, HEIGHT + 40), wall(WIDTH + 12, HEIGHT / 2, 24, HEIGHT + 40),
       wall(WIDTH / 2, -12, WIDTH + 24, 24), wall(WIDTH / 2, HEIGHT + 12, WIDTH, 24),
       wall((WIDTH + CHUTE) / 2, FLOOR + 22, WIDTH - CHUTE, 44),
@@ -187,5 +192,5 @@ export class ClawMachine {
       key, item, x: clamp(body.position.x, 0, WIDTH), y: clamp(body.position.y, 0, HEIGHT), angle: body.angle,
     }))
   }
-  collisionBodies() { return [...this.toys.map(toy => toy.body), ...this.fingers.flat()] }
+  collisionBodies() { return [this.chuteLip, ...this.toys.map(toy => toy.body), ...this.fingers.flat()] }
 }

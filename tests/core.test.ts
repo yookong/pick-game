@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import Matter from 'matter-js'
 import { catalog, settings, tuningDefaults } from '../src/catalog.ts'
 import { CHUTE, ClawMachine, FLOOR } from '../src/claw.ts'
 import { decodeSave } from '../src/storage.ts'
@@ -84,7 +85,16 @@ test('a strong attempt can miss and a weak attempt can move a toy without awardi
   assert.ok(weak.snapshot()[0].y > 310)
 })
 
-test('weak grip can displace a supported toy over the edge', () => {
+test('the chute lip stops a toy rolling across the shelf before the claw drops', () => {
+  const machine = new ClawMachine([toy(124, 319)], false, tuningDefaults)
+  Matter.Body.setVelocity(machine.toys[0].body, { x: -7, y: 0 })
+  advance(machine, 120)
+  assert.equal(machine.phase, 'aim')
+  assert.equal(machine.captures.length, 0)
+  assert.ok(machine.snapshot()[0].x > CHUTE)
+})
+
+test('weak grip can displace a supported toy over the chute lip', () => {
   const machine = new ClawMachine([toy(96)], false, tuningDefaults)
   machine.x = 96
   advance(machine, 60)

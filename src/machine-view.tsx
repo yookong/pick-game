@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { Plush } from './art.tsx'
 import { catalog, settings } from './catalog.ts'
-import { CHUTE, ClawMachine, FLOOR, HEIGHT, WIDTH, jawPath } from './claw.ts'
+import { CHUTE, CHUTE_LIP, ClawMachine, FLOOR, HEIGHT, WIDTH, jawPath } from './claw.ts'
 
 const labels = { aim: '위치를 맞춰 주세요', down: '내려가는 중', close: '집는 중', up: '올라가는 중', travel: '배출구로 이동 중', open: '집게 열림', settle: '배출 확인 중', done: '결과 저장 중' }
 
@@ -96,6 +96,10 @@ export function MachineView({ machine, debug, onDone }: {
       </g>)}
       {[-1, 1].map(side => <polyline key={side} data-testid={side === -1 ? 'jaw' : undefined} points={jawPath(machine.x, machine.y, machine.openness, side).map(point => point.join(',')).join(' ')} fill="none" stroke="#604251" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>)}
       <rect x={machine.x - 11} y={machine.y - 26} width="22" height="11" rx="4" fill="#e69b82" stroke="#604251" strokeWidth="2"/>
+      <g aria-hidden="true">
+        <rect x={CHUTE} y={FLOOR - CHUTE_LIP.height} width={CHUTE_LIP.width} height={CHUTE_LIP.height} fill="#734947"/>
+        <path d={`M${CHUTE + 3} ${FLOOR - CHUTE_LIP.height + 3}h${CHUTE_LIP.width - 6}v${CHUTE_LIP.height - 6}h-${CHUTE_LIP.width - 6}z`} fill="#efc388"/>
+      </g>
       {debug && <g fill="none" stroke="#0a7965" strokeWidth="1">
         <rect x="0" y={FLOOR + 30} width={CHUTE} height={HEIGHT - FLOOR - 30} fill="#0d9d5e40"/>
         {machine.collisionBodies().map(body => <polygon key={body.id} points={body.vertices.map(v => `${v.x},${v.y}`).join(' ')}/>)}
