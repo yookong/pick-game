@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "작은 방의 보물들",
+  "short_name": "작은 보물들",
+  "lang": "ko",
+  "description": "집게를 움직여 인형 친구들을 모으는 작은 오락실",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#f8eedf",
+  "background_color": "#f8eedf",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

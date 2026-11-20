@@ -1,0 +1,35 @@
+{
+  "name": "pick-game",
+  "version": "0.1.0",
+  "description": "Mobile claw-machine collection PWA",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lab": "vite build --mode lab --outDir dist-lab",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/core.test.ts",
+    "test:browser": "playwright test"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "type": "module",
+  "dependencies": {
+    "matter-js": "^0.20.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/matter-js": "^0.20.2",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  }
+}
