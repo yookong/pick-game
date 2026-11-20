@@ -2,7 +2,7 @@ import Matter from 'matter-js'
 import { catalog, settings } from './catalog.ts'
 import type { Capture, Piece, Tuning } from './state.ts'
 
-const { Bodies, Body, Composite, Constraint, Engine, Query } = Matter
+const { Bodies, Body, Composite, Constraint, Engine, Events, Query } = Matter
 // Matter 0.20 supports updateVelocity, which is missing in its type declaration.
 const moveBody = Body.setPosition as (body: Matter.Body, position: Matter.Vector, updateVelocity: boolean) => void
 export const WIDTH = 360
@@ -10,6 +10,7 @@ export const HEIGHT = 410
 export const CHUTE = 72
 export const FLOOR = 338
 export const CHUTE_LIP = { width: 12, height: 20 }
+export const CHUTE_GUARD = { top: 0, height: FLOOR - CHUTE_LIP.height }
 const HOME = 38
 const RAIL = 51
 const STEP = 1 / 60
@@ -57,6 +58,10 @@ export class ClawMachine {
   private grip: { toy: Toy; joint: Matter.Constraint } | null = null
   private fingers: Matter.Body[][]
   private chuteLip: Matter.Body
+  private chuteGuard: Matter.Body
+  private playerActed = false
+  private chuteGuardOpen = false
+  get chuteOpen() { return this.chuteGuardOpen }
   readonly strong: boolean
   readonly tuning: Tuning
   constructor(pile: Piece[], strong: boolean, tuning: Tuning) {
@@ -65,7 +70,10 @@ export class ClawMachine {
     this.toys = pile.map(piece => {
       const definition = catalog.get(piece.item)!
       const { radius, mass } = definition.physics
-      const body = Bodies.circle(piece.x, piece.y, radius, {
+      // Recover pieces left over the chute by an older machine layout.
+      const onShelf = piece.x < CHUTE + CHUTE_LIP.width
+      const x = onShelf ? CHUTE + CHUTE_LIP.width + radius : piece.x
+      const body = Bodies.circle(x, Math.min(piece.y, FLOOR - radius), radius, {
         friction: tuning.friction, frictionAir: .027, restitution: .12, angle: piece.angle,
       })
       Body.setMass(body, mass * tuning.mass)
@@ -79,16 +87,31 @@ export class ClawMachine {
       Bodies.rectangle(x, y, width, height, { isStatic: true, friction: .7 })
     this.chuteLip = wall(CHUTE + CHUTE_LIP.width / 2, FLOOR - CHUTE_LIP.height / 2,
       CHUTE_LIP.width, CHUTE_LIP.height)
+    this.chuteGuard = wall(CHUTE + CHUTE_LIP.width / 2, CHUTE_GUARD.height / 2,
+      CHUTE_LIP.width, CHUTE_GUARD.height)
     Composite.add(this.engine.world, [
-      this.chuteLip,
+      this.chuteLip, this.chuteGuard,
       wall(-12, HEIGHT / 2, 24, HEIGHT + 40), wall(WIDTH + 12, HEIGHT / 2, 24, HEIGHT + 40),
       wall(WIDTH / 2, -12, WIDTH + 24, 24), wall(WIDTH / 2, HEIGHT + 12, WIDTH, 24),
       wall((WIDTH + CHUTE) / 2, FLOOR + 22, WIDTH - CHUTE, 44),
       ...this.toys.map(toy => toy.body), ...this.fingers.flat(),
     ])
+    const toyBodies = new Set(this.toys.map(toy => toy.body))
+    const jawBodies = new Set(this.fingers.flat())
+    Events.on(this.engine, 'collisionStart', ({ pairs }) => {
+      if (!this.playerActed || this.chuteGuardOpen || this.phase === 'aim') return
+      if (!pairs.some(({ bodyA, bodyB }) =>
+        (toyBodies.has(bodyA) && jawBodies.has(bodyB)) ||
+        (toyBodies.has(bodyB) && jawBodies.has(bodyA)))) return
+      this.chuteGuardOpen = true
+    })
   }
   drop() {
     if (this.phase !== 'aim') return
+    this.playerActed = true
+    this.startDrop()
+  }
+  private startDrop() {
     this.fromX = this.x
     const below = this.toys.filter(toy => Math.abs(toy.body.position.x - this.x) < 37)
     this.targetY = clamp(Math.min(317, ...below.map(toy => toy.body.position.y - 15)), 75, 317)
@@ -137,9 +160,10 @@ export class ClawMachine {
     const p = clamp(this.elapsed / duration, 0, 1)
     switch (phase) {
       case 'aim':
+        if (this.input) this.playerActed = true
         this.x = clamp(this.x + clamp(this.input, -1, 1) * 155 * STEP, 39, WIDTH - 39)
         this.remaining = Math.max(0, this.remaining - STEP)
-        if (!this.remaining) this.drop()
+        if (!this.remaining) this.startDrop()
         break
       case 'down': this.y = mix(RAIL, this.targetY, ease(p)); break
       case 'close': this.openness = 1 - ease(p); break
@@ -171,11 +195,13 @@ export class ClawMachine {
           Math.hypot(toy.body.position.x - joint.pointA.x, toy.body.position.y - joint.pointA.y) > 46) this.release()
     }
     if (phase === 'close' && p === 1) this.closeGrip()
+    const wasOpen = this.chuteGuardOpen
     Engine.update(this.engine, 1000 * STEP)
+    if (!wasOpen && this.chuteGuardOpen) Composite.remove(this.engine.world, this.chuteGuard)
     for (let index = this.toys.length - 1; index >= 0; index--) {
       const toy = this.toys[index]
       const { x, y } = toy.body.position
-      if (y < FLOOR + 30 || x < 0 || x >= CHUTE) continue
+      if (!this.chuteGuardOpen || y < FLOOR + 30 || x < 0 || x >= CHUTE) continue
       if (this.grip?.toy === toy) this.release()
       this.captures.push({ key: toy.key, item: toy.item })
       Composite.remove(this.engine.world, toy.body)
@@ -192,5 +218,8 @@ export class ClawMachine {
       key, item, x: clamp(body.position.x, 0, WIDTH), y: clamp(body.position.y, 0, HEIGHT), angle: body.angle,
     }))
   }
-  collisionBodies() { return [this.chuteLip, ...this.toys.map(toy => toy.body), ...this.fingers.flat()] }
+  collisionBodies() {
+    return [this.chuteLip, ...(this.chuteGuardOpen ? [] : [this.chuteGuard]),
+      ...this.toys.map(toy => toy.body), ...this.fingers.flat()]
+  }
 }

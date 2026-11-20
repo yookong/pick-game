@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import Matter from 'matter-js'
 import { catalog, settings, tuningDefaults } from '../src/catalog.ts'
-import { CHUTE, ClawMachine, FLOOR } from '../src/claw.ts'
+import { CHUTE, ClawMachine } from '../src/claw.ts'
 import { decodeSave } from '../src/storage.ts'
 import {
   attendance, begin, buyCoins, exchange, finishMini, grant, miniUsed, newState, recover,
@@ -104,24 +104,43 @@ test('weak grip can displace a supported toy over the chute lip', () => {
   assert.equal(machine.captures.length, 1)
 })
 
-test('awards only observed chute crossings and persists the resulting pile', () => {
-  const state = newState(12)
-  state.pile = [toy(30, FLOOR + 15), { ...toy(58, FLOOR + 57), key: 'b' },
-    ...[130, 220, 310].map((x, index) => ({ ...toy(x), key: String(index) }))]
-  assert.ok(begin(state))
-  const machine = new ClawMachine(state.pile, false, tuningDefaults)
+test('the guard blocks a falling upper toy through aiming and a missed drop', () => {
+  const machine = new ClawMachine([toy(124, 220)], true, tuningDefaults)
+  Matter.Body.setVelocity(machine.toys[0].body, { x: -7, y: 0 })
+  advance(machine, 120)
+  assert.equal(machine.chuteOpen, false)
   assert.equal(machine.captures.length, 0)
-  advance(machine, 60)
-  assert.ok(machine.toys.every(({ body }) => body.position.x >= CHUTE))
+  assert.ok(machine.snapshot()[0].x > CHUTE)
+  machine.x = 300
   machine.drop()
   advance(machine, 300)
+  assert.equal(machine.phase, 'done')
+  assert.equal(machine.chuteOpen, false)
+  assert.equal(machine.captures.length, 0)
+})
+
+test('an unattended timeout still drops but keeps the guard closed on contact', () => {
+  const machine = new ClawMachine([toy(182)], true, tuningDefaults)
+  advance(machine, (settings.aimSeconds + 6) * 60)
+  assert.equal(machine.phase, 'done')
+  assert.equal(machine.chuteOpen, false)
+  assert.equal(machine.captures.length, 0)
+})
+
+test('awards only observed chute crossings and persists the resulting pile', () => {
+  const state = newState(1)
+  assert.ok(begin(state))
+  const machine = new ClawMachine(state.pile, false, tuningDefaults)
+  run(machine)
+  assert.equal(machine.chuteOpen, true)
+  assert.equal(machine.captures.length, 2)
   const id = state.pending!.id
-  assert.equal(settle(state, id, [...machine.captures, ...machine.captures, { key: 'unknown', item: 'mochi' }], machine.snapshot(), today)?.length, 2)
-  assert.equal(state.inventory.mochi.count, 2)
-  assert.ok(state.pile.length >= settings.refillBelow)
+  const captures = [...machine.captures, ...machine.captures, { key: 'unknown', item: 'mochi' }]
+  assert.equal(settle(state, id, captures, machine.snapshot(), today)?.length, 2)
+  for (const capture of machine.captures) assert.equal(state.inventory[capture.item].count, 1)
+  assert.equal(state.pile.length, 13)
   assert.deepEqual(decodeSave(JSON.stringify(state)).pile, state.pile)
-  assert.equal(settle(state, id, machine.captures, machine.snapshot(), today), null)
-  assert.equal(state.inventory.mochi.count, 2)
+  assert.equal(settle(state, id, captures, machine.snapshot(), today), null)
 })
 
 test('attendance and minigame use the device day and settle only once', () => {

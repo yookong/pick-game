@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { Plush } from './art.tsx'
 import { catalog, settings } from './catalog.ts'
-import { CHUTE, CHUTE_LIP, ClawMachine, FLOOR, HEIGHT, WIDTH, jawPath } from './claw.ts'
+import { CHUTE, CHUTE_GUARD, CHUTE_LIP, ClawMachine, FLOOR, HEIGHT, WIDTH, jawPath } from './claw.ts'
 
 const labels = { aim: '위치를 맞춰 주세요', down: '내려가는 중', close: '집는 중', up: '올라가는 중', travel: '배출구로 이동 중', open: '집게 열림', settle: '배출 확인 중', done: '결과 저장 중' }
 
@@ -97,6 +97,8 @@ export function MachineView({ machine, debug, onDone }: {
       {[-1, 1].map(side => <polyline key={side} data-testid={side === -1 ? 'jaw' : undefined} points={jawPath(machine.x, machine.y, machine.openness, side).map(point => point.join(',')).join(' ')} fill="none" stroke="#604251" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>)}
       <rect x={machine.x - 11} y={machine.y - 26} width="22" height="11" rx="4" fill="#e69b82" stroke="#604251" strokeWidth="2"/>
       <g aria-hidden="true">
+        {!machine.chuteOpen && <rect data-testid="chute-guard" x={CHUTE + 1} y={CHUTE_GUARD.top} width={CHUTE_LIP.width - 2}
+          height={CHUTE_GUARD.height} fill="#d8f0e9" fillOpacity=".72" stroke="#53827b" strokeWidth="1.5"/>}
         <rect x={CHUTE} y={FLOOR - CHUTE_LIP.height} width={CHUTE_LIP.width} height={CHUTE_LIP.height} fill="#734947"/>
         <path d={`M${CHUTE + 3} ${FLOOR - CHUTE_LIP.height + 3}h${CHUTE_LIP.width - 6}v${CHUTE_LIP.height - 6}h-${CHUTE_LIP.width - 6}z`} fill="#efc388"/>
       </g>

@@ -29,6 +29,7 @@ test('production loads offline, settles a touch-driven catch and saves the colle
   await page.getByRole('button', { name: '뽑기 기계로' }).tap()
   await page.getByRole('button', { name: /뽑기 시작/ }).tap()
   await expect(page.getByLabel('코인 110', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('chute-guard')).toBeVisible()
   const joystick = page.getByRole('group', { name: '좌우 조이스틱' })
   const box = (await joystick.boundingBox())!
   const cdp = await context.newCDPSession(page)
@@ -44,6 +45,7 @@ test('production loads offline, settles a touch-driven catch and saves the colle
   }
   await expect(page.getByTestId('jaw')).not.toHaveAttribute('points', initial!)
   await page.getByRole('button', { name: '↓ 하강' }).tap()
+  await expect(page.getByTestId('chute-guard')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: '인형을 얻었어요!' })).toBeVisible({ timeout: 9000 })
   await expect(page.getByLabel('뽑기 결과')).toContainText('모찌 토끼')
   await page.getByRole('button', { name: '결과 닫기' }).tap()
