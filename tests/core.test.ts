@@ -85,19 +85,19 @@ test('a strong attempt can miss and a weak attempt can move a toy without awardi
   assert.ok(weak.snapshot()[0].y > 310)
 })
 
-test('each extra toy-width adds a tenth of a second and drop locks the starting band', () => {
+test('each extra toy-width adds 0.05 seconds and drop locks the starting band', () => {
   const machine = new ClawMachine([toy(182)], false, tuningDefaults)
-  for (const [x, seconds] of [[72, .2], [146, .2], [147, .3], [189, .4], [321, .7]]) {
+  for (const [x, seconds] of [[72, .2], [146, .2], [147, .25], [189, .3], [321, .45]]) {
     machine.x = x
     assert.equal(machine.gripSeconds, seconds)
   }
   machine.drop()
   advance(machine, 160)
   assert.ok(machine.x < 147)
-  assert.equal(machine.gripSeconds, .7)
+  assert.equal(machine.gripSeconds, .45)
   const strong = new ClawMachine([toy(182)], true, tuningDefaults)
   strong.x = 189
-  assert.equal(strong.gripSeconds, 8.2)
+  assert.equal(strong.gripSeconds, 8.1)
 })
 
 test('the chute lip stops a toy rolling across the shelf before the claw drops', () => {
