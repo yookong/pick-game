@@ -297,5 +297,5 @@ function App() {
 
 createRoot(document.getElementById('root')!).render(<App/>)
 if (import.meta.env.PROD && !__LAB__ && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => { void navigator.serviceWorker.register('./sw.js').catch(console.warn) })
+  window.addEventListener('load', () => { void navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(console.warn) })
 }

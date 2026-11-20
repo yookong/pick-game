@@ -1,3 +1,7 @@
+import { readFile } from 'node:fs/promises'
+import { createServer } from 'node:http'
+import { extname, resolve } from 'node:path'
+import type { AddressInfo } from 'node:net'
 import { test, expect } from '@playwright/test'
 import { newState } from '../src/state.ts'
 
@@ -92,4 +96,40 @@ test('development lab grants duplicates and selected duplicates can be exchanged
   await expect(page.getByLabel('코인 130', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '도감' }).tap()
   await expect(page.getByRole('button', { name: /모찌 토끼.*1개/ })).toBeVisible()
+})
+
+test('offline shell uses its own build even if the host serves stale index.html', async ({ page, context }) => {
+  const base = '/pick-game/'
+  const directory = resolve('dist')
+  const types: Record<string, string> = {
+    '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css',
+    '.png': 'image/png', '.webmanifest': 'application/manifest+json',
+  }
+  const server = createServer(async (request, response) => {
+    const path = new URL(request.url ?? '/', 'http://localhost').pathname
+    if (!path.startsWith(base)) { response.writeHead(404).end(); return }
+    const location = path.slice(base.length)
+    if (location === 'index.html') {
+      response.writeHead(200, { 'Content-Type': types['.html'] }).end('<h1>Stale host response</h1>')
+      return
+    }
+    try {
+      const file = resolve(directory, location || 'index.html')
+      const contents = await readFile(file)
+      response.writeHead(200, { 'Content-Type': types[extname(file)] }).end(contents)
+    } catch { response.writeHead(404).end() }
+  })
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  try {
+    const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + base
+    await page.goto(url)
+    await page.getByRole('button', { name: '뽑기 기계로' }).waitFor()
+    await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
+    await context.setOffline(true)
+    await page.reload()
+    await expect(page.getByRole('button', { name: '뽑기 기계로' })).toBeVisible()
+  } finally {
+    server.closeAllConnections()
+    await new Promise<void>(resolve => server.close(() => resolve()))
+  }
 })

@@ -13,18 +13,27 @@ export default defineConfig(({ mode }) => ({
         .filter(entry => entry.isFile() && entry.name !== 'sw.js')
         .map(entry => join(entry.parentPath, entry.name).slice(dir.length + 1).replaceAll('\\', '/'))
         .sort()
-      const hash = createHash('sha256')
+      const html = await readFile(join(dir, 'index.html'), 'utf8')
+      const hash = createHash('sha256').update('offline-shell-v2')
       for (const file of files) hash.update(await readFile(join(dir, file)))
       const version = 'treasure-' + hash.digest('hex').slice(0, 16)
       await writeFile(join(dir, 'sw.js'), `
 const cache = ${JSON.stringify(version)};
 const base = self.registration.scope;
-const files = ${JSON.stringify(files)}.map(file => new URL(file, base).href);
-self.addEventListener('install', event => event.waitUntil(caches.open(cache).then(store => store.addAll(files))));
+const index = new URL('index.html', base).href;
+const html = ${JSON.stringify(html)};
+const files = ${JSON.stringify(files.filter(file => file !== 'index.html'))}
+  .map(file => new Request(new URL(file, base), { cache: 'reload' }));
+self.addEventListener('install', event => event.waitUntil((async () => {
+  const store = await caches.open(cache);
+  await store.addAll(files);
+  await store.put(index, new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }));
+  await self.skipWaiting();
+})()));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('treasure-') && key !== cache).map(key => caches.delete(key))))));
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' || !event.request.url.startsWith(base)) return;
-  const url = event.request.mode === 'navigate' ? new URL('index.html', base).href : event.request.url;
+  const url = event.request.mode === 'navigate' ? index : event.request.url;
   event.respondWith(caches.open(cache).then(store => store.match(url)).then(response => response || fetch(event.request)));
 });
 `)
