@@ -20,6 +20,11 @@ pnpm preview
 
 배포할 때는 `dist/`를 정적 호스팅에 올립니다. 최초 온라인 방문에서 서비스 워커 설치가 완료되면 오프라인으로 실행됩니다. iOS에서는 Safari의 공유 메뉴에서 ‘홈 화면에 추가’를 사용할 수 있습니다. 새 서비스 워커는 기존 페이지가 닫힐 때까지 대기합니다.
 
+## GitHub Pages 공개 테스트
+
+저장소의 **Settings → Pages → Build and deployment → Source**에서 **GitHub Actions**를 선택합니다. **Actions → Deploy game to GitHub Pages → Run workflow**에서 `main`을 실행하면 프로덕션 빌드가 배포됩니다. 이후에는 `main`에 푸시할 때마다 자동으로 다시 배포합니다. 배포가 끝나면 [게임 열기](https://yookong.github.io/pick-game/)로 접속합니다.
+
+
 ## 조작과 경제
 
 - 첫 시작에 코인 120개를 받습니다. 뽑기를 시작하면 10개를 사용합니다. 조이스틱을 왼쪽이나 오른쪽으로 누르거나 드래그해 집게를 움직입니다. 키보드는 ←/→ 또는 A/D, 하강은 Space입니다. 12초가 지나면 자동으로 내려갑니다.
